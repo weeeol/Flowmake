@@ -1,0 +1,14 @@
+# Python internals
+__pycache__/
+*.py[cod]
+
+# Virtual Environments
+venv/
+env/
+.env
+
+# Generated Output
+*.png
+*.zip
+*.pdf
+flowchart_output*
