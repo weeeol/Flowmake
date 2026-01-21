@@ -1,42 +1,158 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+:root {
+  --primary: #6366f1;       /* Indigo */
+  --primary-hover: #4f46e5;
+  --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  --card-bg: #ffffff;
+  --text-main: #1f2937;
+  --text-sub: #6b7280;
+  --border-color: #e5e7eb;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-gradient);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* --- Layout --- */
+.app-container {
+  width: 100%;
+  max-width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .card {
-  padding: 2em;
+  background: var(--card-bg);
+  width: 400px;
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+              0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  text-align: center;
+  transition: transform 0.3s ease;
 }
 
-.read-the-docs {
-  color: #888;
+.card:hover {
+  transform: translateY(-5px);
+}
+
+/* --- Typography --- */
+.header h1 {
+  font-size: 2rem;
+  margin: 0 0 10px 0;
+  color: var(--text-main);
+  letter-spacing: -0.025em;
+}
+
+.gradient-text {
+  background: linear-gradient(to right, #6366f1, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header p {
+  color: var(--text-sub);
+  font-size: 0.95rem;
+  margin-bottom: 30px;
+}
+
+/* --- Dropzone Area --- */
+.dropzone {
+  border: 2px dashed var(--border-color);
+  border-radius: 16px;
+  padding: 40px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background-color: #f9fafb;
+}
+
+.dropzone:hover {
+  border-color: var(--primary);
+  background-color: #eef2ff;
+}
+
+.dropzone.active {
+  border-color: #10b981;
+  background-color: #d1fae5;
+  transform: scale(1.02);
+}
+
+.dropzone.error-border {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+/* --- Icons & Text inside Dropzone --- */
+.icon-wrapper {
+  margin-bottom: 15px;
+}
+
+.icon-spin {
+  animation: spin 1s linear infinite;
+}
+
+.text-content h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-main);
+}
+
+.highlight {
+  color: var(--primary);
+}
+
+.sub-text {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin-top: 8px;
+}
+
+/* --- Status Badges --- */
+.status-badge {
+  margin-top: 20px;
+  padding: 10px 15px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.status-badge.error {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
+.status-badge.success {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.footer {
+  margin-top: 20px;
+  font-size: 0.75rem;
+  color: #6b7280;
+  opacity: 0.8;
+}
+
+/* --- Animations --- */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
