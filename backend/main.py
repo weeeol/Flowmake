@@ -1,11 +1,20 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import Response
+from fastapi.middleware.cors import CORSMiddleware
 import ast
 import graphviz
 import zipfile
 import io
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins (for development)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (POST, GET, etc.)
+    allow_headers=["*"],
+)
 
 # --- BUILDER CLASS (Unchanged logic, just keeping it here for context) ---
 class FlowchartBuilder(ast.NodeVisitor):
