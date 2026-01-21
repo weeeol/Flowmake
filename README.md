@@ -1,6 +1,6 @@
-# FlowChartGen - Python to Flowchart Visualizer
+# Flowmake - Python to Flowchart Visualizer
 
-FlowChartGen is a full-stack application that automatically converts Python source code into modern, professional flowcharts. It parses your code's Abstract Syntax Tree (AST), identifies logic flows, and renders them as high-quality images.
+Flowmake is a full-stack application that automatically converts Python source code into modern, professional flowcharts. It parses your code's Abstract Syntax Tree (AST), identifies logic flows, and renders them as high-quality images.
 
 ![Project Screenshot](https://via.placeholder.com/800x450?text=Dashboard+Preview)
 
