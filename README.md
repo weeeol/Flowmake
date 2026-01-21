@@ -1,20 +1,3 @@
-<<<<<<< HEAD
-# Python Flowchart Generator API 
-
-This is a FastAPI backend that converts Python source code into visual flowcharts.
-
-## Features
-- Upload a `.py` file.
-- Detects Functions and Classes automatically.
-- Generates a Flowchart for every method.
-- Returns a ZIP file containing organized PNG images.
-
-## How to Run
-1. Install Graphviz on your machine (e.g., `sudo apt-get install graphviz`).
-2. Install dependencies: `pip install -r requirements.txt`
-3. Run server: `uvicorn main:app --reload`
-4. Go to `http://localhost:8000/docs` to test.
-=======
 # Flowmake - Python to Flowchart Visualizer
 
 Flowmake is a full-stack application that automatically converts Python source code into modern, professional flowcharts. It parses your code's Abstract Syntax Tree (AST), identifies logic flows, and renders them as high-quality images.
@@ -83,4 +66,3 @@ pip install fastapi "uvicorn[standard]" graphviz
 
 # 3. Run the Server
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
->>>>>>> backend
