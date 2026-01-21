@@ -165,7 +165,7 @@ class FlowchartBuilder(ast.NodeVisitor):
                 flush_buffer()
                 self.visit(node)
 
-        flush_buffer() # Handle any leftovers at the end
+        flush_buffer()
 
     # --- 4. UPDATED VISITORS ---
     def build_from_node(self, node):
