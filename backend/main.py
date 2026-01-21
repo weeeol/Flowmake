@@ -5,6 +5,7 @@ import ast
 import graphviz
 import zipfile
 import io
+import textwrap
 
 app = FastAPI()
 
@@ -19,60 +20,68 @@ app.add_middleware(
 # --- BUILDER CLASS (Unchanged logic, just keeping it here for context) ---
 class FlowchartBuilder(ast.NodeVisitor):
     def __init__(self, title):
+        # ... (Keep your existing __init__ styles: fonts, colors, splines='ortho') ...
         self.dot = graphviz.Digraph(comment=title, format='png')
-        # ... keep your styling attributes from the previous step ...
         self.dot.attr(splines='ortho')
         self.dot.attr('node', shape='box', style='filled,rounded', fontname='Helvetica')
         
         self.node_count = 0
         self.last_node = None
 
-    # --- HELPER: Turn Code into Human Text ---
+    # --- 1. REUSE YOUR SUMMARIZE FUNCTION ---
     def summarize(self, node):
         """
-        Translates Python AST nodes into simplified English labels.
+        Returns a tuple: (Label, Type)
+        Type helps us decide if we should merge this node with the previous one.
         """
-        # 1. Assignments (e.g., x = 10)
+        # A. Assignments
         if isinstance(node, ast.Assign):
             targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
-            if targets:
-                return f"Set {', '.join(targets)}"
-            return "Assign Variable"
+            code_preview = ast.unparse(node)
+            # If short, show code. If long, summarize.
+            label = code_preview if len(code_preview) < 30 else f"Set {', '.join(targets)}"
+            return (label, 'assign')
 
-        # 2. Augmented Assign (e.g., x += 1)
-        elif isinstance(node, ast.AugAssign):
-            target = node.target.id if isinstance(node.target, ast.Name) else "Variable"
-            op = type(node.op).__name__ # Add, Sub, Mult
-            if op == 'Add': return f"Increment {target}"
-            if op == 'Sub': return f"Decrement {target}"
-            return f"Update {target}"
-
-        # 3. Expressions / Function Calls
+        # B. Expressions / Calls
         elif isinstance(node, ast.Expr):
+            code = ast.unparse(node).strip()
+            
+            # Detect Function Calls
             if isinstance(node.value, ast.Call):
                 func_name = "Unknown"
-                if isinstance(node.value.func, ast.Name):
+                if isinstance(node.value.func, ast.Name): 
                     func_name = node.value.func.id
-                elif isinstance(node.value.func, ast.Attribute):
+                elif isinstance(node.value.func, ast.Attribute): 
                     func_name = node.value.func.attr
                 
-                # Special readable names for common functions
-                if func_name == 'print': return "Output / Print"
-                if func_name == 'sleep': return "Wait"
-                return f"Call {func_name}()"
-            return "Action"
+                if func_name == 'print': 
+                    return ("Output / Print", 'io')
+                
+                # For other functions, show the call (e.g., "hash_password()")
+                # Truncate if it's a giant line
+                label = textwrap.shorten(code, width=30, placeholder="...")
+                return (label, 'process')
 
-        # 4. Return Statements
+            return (textwrap.shorten(code, width=30), 'process')
+
+        # C. Return
         elif isinstance(node, ast.Return):
-            return "Return Result"
+            # Show what is being returned if possible
+            if node.value:
+                val = ast.unparse(node.value)
+                return (f"Return {val}", 'io')
+            return ("Return", 'io')
 
-        # Fallback: specific raw code is too complex, just say "Process"
-        return "Process Logic"
-
-    # --- NODE CREATION ---
+        # Fallback: Just show the code!
+        try:
+            code = ast.unparse(node)
+            return (textwrap.shorten(code, width=30), 'process')
+        except:
+            return ("Process Logic", 'process')
+        
+    # --- 2. NEW: NODE CREATION (With Colors) ---
     def new_node(self, label, type='process'):
         node_id = str(self.node_count)
-        # We still clean the label just in case
         clean_label = label.replace(':', '').replace('"', "'")
         
         attrs = {}
@@ -82,7 +91,7 @@ class FlowchartBuilder(ast.NodeVisitor):
             attrs = {'shape': 'diamond', 'fillcolor': '#fff7ed', 'color': '#ea580c', 'fontcolor': '#9a3412'}
         elif type == 'process':
             attrs = {'shape': 'box', 'fillcolor': '#eff6ff', 'color': '#2563eb', 'fontcolor': '#1e3a8a'}
-        elif type == 'io': # New type for Print/Return
+        elif type == 'io': 
             attrs = {'shape': 'parallelogram', 'fillcolor': '#f3e8ff', 'color': '#7e22ce', 'fontcolor': '#581c87'}
 
         self.dot.node(node_id, clean_label, **attrs)
@@ -91,55 +100,88 @@ class FlowchartBuilder(ast.NodeVisitor):
 
     def add_edge(self, start, end, label=''):
         if start and end:
-            # If there is a label (like "Yes"/"No"), give it a background 
-            # so lines don't strike through the text
-            if label:
-                self.dot.edge(start, end, label=f"  {label}  ", fontcolor='#0f172a')
-            else:
-                self.dot.edge(start, end)
+            self.dot.edge(start, end, label=label)
 
+    # --- 3. NEW: THE BATCH PROCESSOR ---
+    def visit_stmts(self, stmts):
+        buffer = []
+        last_type = None
+
+        def flush_buffer():
+            nonlocal last_type
+            if not buffer: return
+            
+            # Generate labels for everything in buffer
+            node_data = [self.summarize(n) for n in buffer]
+            labels = [n[0] for n in node_data]
+            types = [n[1] for n in node_data]
+            
+            # Collapse ONLY duplicates
+            # (e.g. "Print", "Print" -> "Print (x2)")
+            # But "x=1", "y=2" -> Stay separate lines in one box
+            collapsed_labels = []
+            if labels:
+                current_label = labels[0]
+                count = 1
+                for i in range(1, len(labels)):
+                    if labels[i] == current_label:
+                        count += 1
+                    else:
+                        txt = f"{current_label} (x{count})" if count > 1 else current_label
+                        collapsed_labels.append(txt)
+                        current_label = labels[i]
+                        count = 1
+                txt = f"{current_label} (x{count})" if count > 1 else current_label
+                collapsed_labels.append(txt)
+
+            full_label = "\n".join(collapsed_labels)
+            
+            # Decide visual style based on majority content
+            is_io = any(t == 'io' for t in types)
+            style_type = 'io' if is_io else 'process'
+
+            node_id = self.new_node(full_label, type=style_type)
+            self.add_edge(self.last_node, node_id)
+            self.last_node = node_id
+            
+            buffer.clear()
+            last_type = None
+
+        for node in stmts:
+            # We treat these as "simple" linear nodes
+            if isinstance(node, (ast.Assign, ast.AugAssign, ast.Expr, ast.Return, ast.Pass)):
+                current_label, current_type = self.summarize(node)
+                
+                # LOGIC: When to break the chain?
+                # 1. If the Type changes (e.g. going from Assignment -> Print)
+                # 2. OR if it's a Return statement (always isolate returns)
+                if last_type and (current_type != last_type or current_type == 'io' or last_type == 'io'):
+                     flush_buffer()
+                
+                buffer.append(node)
+                last_type = current_type
+            else:
+                # Complex structure (If/For) -> Flush immediately
+                flush_buffer()
+                self.visit(node)
+
+        flush_buffer() # Handle any leftovers at the end
+
+    # --- 4. UPDATED VISITORS ---
     def build_from_node(self, node):
         start_id = self.new_node("Start", type='start_end')
         self.last_node = start_id
         
-        for item in node.body:
-            self.visit(item)
+        # USE NEW BATCH PROCESSOR
+        self.visit_stmts(node.body)
             
         end_id = self.new_node("End", type='start_end')
         self.add_edge(self.last_node, end_id)
 
-    def visit_Assign(self, node):
-        label = self.summarize(node)
-        action_id = self.new_node(label, type='process')
-        self.add_edge(self.last_node, action_id)
-        self.last_node = action_id
-
-    def visit_AugAssign(self, node): # Handle x += 1
-        label = self.summarize(node)
-        action_id = self.new_node(label, type='process')
-        self.add_edge(self.last_node, action_id)
-        self.last_node = action_id
-
-    def visit_Expr(self, node):
-        label = self.summarize(node)
-        # Check if it's an Output action to give it a distinct shape
-        node_type = 'io' if 'Output' in label else 'process'
-        action_id = self.new_node(label, type=node_type)
-        self.add_edge(self.last_node, action_id)
-        self.last_node = action_id
-
-    def visit_Return(self, node):
-        label = self.summarize(node)
-        action_id = self.new_node(label, type='io')
-        self.add_edge(self.last_node, action_id)
-        self.last_node = action_id
-
     def visit_If(self, node):
-        # Decisions usually need the specific condition to make sense,
-        # so we keep the raw condition but formatted nicely.
         try:
             condition = ast.unparse(node.test)
-        except AttributeError:
+        except:
             condition = "Condition"
             
         decision_id = self.new_node(f"Is {condition}?", type='decision')
@@ -149,23 +191,20 @@ class FlowchartBuilder(ast.NodeVisitor):
         
         # True Path
         self.last_node = entry_node
-        for item in node.body:
-            self.visit(item)
+        self.visit_stmts(node.body) # Use batch processor
         true_end = self.last_node
         
         # False Path
         self.last_node = entry_node
-        for item in node.orelse:
-            self.visit(item)
+        self.visit_stmts(node.orelse) # Use batch processor
         false_end = self.last_node
         
         merge_id = self.new_node("", type='process')
         self.dot.node(merge_id, shape='point', width='0')
-        
         self.add_edge(true_end, merge_id, label="Yes")
         self.add_edge(false_end, merge_id, label="No")
         self.last_node = merge_id
-             
+
 # --- NEW ZIP ENDPOINT WITH CLASS SUPPORT ---
 @app.post("/upload_flowchart_zip")
 async def upload_flowchart_zip(file: UploadFile = File(...)):
