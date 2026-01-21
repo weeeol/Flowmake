@@ -1,22 +1,29 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
-import JSZip from 'jszip'; // Import the unzipper
-import { UploadCloud, CheckCircle, AlertCircle, Loader2, Download, Image as ImageIcon } from 'lucide-react';
+import JSZip from 'jszip';
+import { 
+  UploadCloud, Loader2, AlertCircle, Download, 
+  Folder, FolderOpen, Image as ImageIcon, ChevronRight 
+} from 'lucide-react';
 import './App.css';
 
 function App() {
+  // State
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [images, setImages] = useState([]); // Store the extracted images
-  const [zipBlob, setZipBlob] = useState(null); // Store the raw zip file for downloading later
+  const [zipBlob, setZipBlob] = useState(null);
+  
+  // Data Structure: { "Global": [img1, img2], "AuthClass": [img3] }
+  const [folders, setFolders] = useState({}); 
+  const [selectedFolder, setSelectedFolder] = useState(null);
 
-  // Cleanup URLs to prevent memory leaks
+  // Cleanup memory
   useEffect(() => {
     return () => {
-      images.forEach(img => URL.revokeObjectURL(img.src));
+      Object.values(folders).flat().forEach(img => URL.revokeObjectURL(img.src));
     };
-  }, [images]);
+  }, [folders]);
 
   const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -24,42 +31,60 @@ function App() {
 
     setLoading(true);
     setError(null);
-    setImages([]);
+    setFolders({});
     setZipBlob(null);
+    setSelectedFolder(null);
 
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      // 1. Get the ZIP file from backend
       const response = await axios.post('http://127.0.0.1:8000/upload_flowchart_zip', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         responseType: 'blob', 
       });
 
-      // 2. Save ZIP blob for later download
       setZipBlob(response.data);
-
-      // 3. Unzip content for preview
+      
+      // Process ZIP and Group by Folder
       const zip = await JSZip.loadAsync(response.data);
-      const imagePromises = [];
+      const newFolders = {};
+      const promises = [];
 
       zip.forEach((relativePath, zipEntry) => {
         if (zipEntry.name.endsWith('.png')) {
-          const promise = zipEntry.async('blob').then(blob => ({
-            name: zipEntry.name,
-            src: URL.createObjectURL(blob)
-          }));
-          imagePromises.push(promise);
+          const promise = zipEntry.async('blob').then(blob => {
+            // Determine folder name from path (e.g. "UserManager/login.png")
+            const parts = zipEntry.name.split('/');
+            let folderName = "Global Functions";
+            let fileName = zipEntry.name;
+
+            if (parts.length > 1) {
+              folderName = parts[0]; // "UserManager"
+              fileName = parts[parts.length - 1]; // "login.png"
+            }
+
+            if (!newFolders[folderName]) newFolders[folderName] = [];
+            
+            newFolders[folderName].push({
+              name: fileName,
+              src: URL.createObjectURL(blob)
+            });
+          });
+          promises.push(promise);
         }
       });
 
-      const extractedImages = await Promise.all(imagePromises);
-      setImages(extractedImages);
+      await Promise.all(promises);
+      setFolders(newFolders);
+      
+      // Select the first folder automatically
+      const firstKey = Object.keys(newFolders)[0];
+      if (firstKey) setSelectedFolder(firstKey);
 
     } catch (err) {
       console.error(err);
-      setError("Failed to process file.");
+      setError("Failed. Is Backend running?");
     } finally {
       setLoading(false);
     }
@@ -77,69 +102,87 @@ function App() {
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
-    onDrop,
-    accept: {'text/x-python': ['.py']},
-    multiple: false
+    onDrop, accept: {'text/x-python': ['.py']}, multiple: false 
   });
 
   return (
-    <div className="app-container">
-      <div className="card">
-        <div className="header">
-          <h1>FlowChart<span className="gradient-text">Gen</span></h1>
-          <p>Drag & drop Python code to view logic instantly.</p>
+    <div className="dashboard">
+      
+      {/* --- LEFT SIDEBAR (Navigation) --- */}
+      <div className="sidebar">
+        <div className="brand">
+          <h2>Flow<span className="accent">Gen</span></h2>
         </div>
 
-        {/* DROPZONE */}
-        <div 
-          {...getRootProps()} 
-          className={`dropzone ${isDragActive ? 'active' : ''} ${error ? 'error-border' : ''}`}
-        >
+        {/* Mini Upload Area */}
+        <div {...getRootProps()} className={`mini-dropzone ${isDragActive ? 'active' : ''}`}>
           <input {...getInputProps()} />
-          <div className="icon-wrapper">
-            {loading ? <Loader2 className="icon-spin" size={48} color="#6366f1" /> : 
-             error ? <AlertCircle size={48} color="#ef4444" /> : 
-             <UploadCloud size={48} color="#6366f1" />}
-          </div>
-          <div className="text-content">
-             {loading ? <h3>Processing...</h3> : <h3>Click or Drag .py file</h3>}
-          </div>
+          {loading ? <Loader2 className="spin" /> : <UploadCloud />}
+          <span>{loading ? "Processing..." : "New Upload"}</span>
         </div>
 
-        {/* ERROR MESSAGE */}
-        {error && (
-          <div className="status-badge error">
-            <AlertCircle size={16} /> <span>{error}</span>
-          </div>
-        )}
+        {/* Error Message */}
+        {error && <div className="error-msg"><AlertCircle size={14}/> {error}</div>}
 
-        {/* DOWNLOAD BUTTON (Only shows if we have results) */}
-        {images.length > 0 && (
-          <button className="download-btn" onClick={downloadZip}>
-            <Download size={18} /> Download All as ZIP
+        {/* Folder List */}
+        <div className="folder-list">
+          <h3>Structure</h3>
+          {Object.keys(folders).length === 0 && <p className="empty-state">No files loaded.</p>}
+          
+          {Object.keys(folders).map(folderName => (
+            <button 
+              key={folderName} 
+              className={`folder-item ${selectedFolder === folderName ? 'active' : ''}`}
+              onClick={() => setSelectedFolder(folderName)}
+            >
+              {selectedFolder === folderName ? <FolderOpen size={18} /> : <Folder size={18} />}
+              <span>{folderName}</span>
+              <span className="count">{folders[folderName].length}</span>
+              {selectedFolder === folderName && <ChevronRight className="indicator" size={14} />}
+            </button>
+          ))}
+        </div>
+
+        {/* Download Button (Fixed at bottom) */}
+        {zipBlob && (
+          <button className="download-btn-sidebar" onClick={downloadZip}>
+            <Download size={16} /> Download ZIP
           </button>
         )}
       </div>
 
-      {/* GALLERY SECTION */}
-      {images.length > 0 && (
-        <div className="gallery-section">
-          <h2>Generated Flowcharts ({images.length})</h2>
-          <div className="gallery-grid">
-            {images.map((img, index) => (
-              <div key={index} className="image-card">
-                <div className="image-header">
-                  <ImageIcon size={16} />
-                  <span>{img.name}</span>
+      {/* --- RIGHT CONTENT (Canvas) --- */}
+      <div className="main-canvas">
+        {selectedFolder ? (
+          <div className="canvas-content">
+            <header className="canvas-header">
+              <h1>{selectedFolder}</h1>
+              <span className="badge">{folders[selectedFolder].length} Flowcharts</span>
+            </header>
+            
+            <div className="masonry-grid">
+              {folders[selectedFolder].map((img, idx) => (
+                <div key={idx} className="chart-card">
+                  <div className="card-top">
+                    <ImageIcon size={14} /> {img.name}
+                  </div>
+                  <div className="card-image">
+                    <img src={img.src} alt={img.name} />
+                  </div>
                 </div>
-                <div className="image-preview">
-                  <img src={img.src} alt={img.name} />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="welcome-screen">
+            <div className="placeholder-art">
+              <UploadCloud size={80} color="#e2e8f0" />
+            </div>
+            <h1>Ready to Visualize?</h1>
+            <p>Upload a Python file on the left to fill this space.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
