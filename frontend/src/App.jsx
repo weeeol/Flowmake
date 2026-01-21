@@ -111,7 +111,7 @@ function App() {
       {/* --- LEFT SIDEBAR (Navigation) --- */}
       <div className="sidebar">
         <div className="brand">
-          <h2>Flow<span className="accent">Gen</span></h2>
+          <h2>Flow<span className="accent">make</span></h2>
         </div>
 
         {/* Mini Upload Area */}
