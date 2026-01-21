@@ -248,3 +248,14 @@ body, #root {
 }
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
+.empty-state {
+  color: var(--text-gray); /* Forces it to be dark gray (#64748b) */
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.9rem;
+  font-style: italic;
+  opacity: 0.8;
+  padding: 10px;
+  background: rgba(0,0,0,0.03); /* Tiny background tint to verify visibility */
+  border-radius: 8px;
+}
