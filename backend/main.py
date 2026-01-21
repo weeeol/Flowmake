@@ -67,3 +67,56 @@ class FlowchartBuilder(ast.NodeVisitor):
     def visit_Expr(self, node):
         self.add_edge(self.last_node, self.new_node(ast.unparse(node)))
         self.last_node = str(self.node_count - 1)
+
+# --- NEW ZIP ENDPOINT WITH CLASS SUPPORT ---
+@app.post("/upload_flowchart_zip")
+async def upload_flowchart_zip(file: UploadFile = File(...)):
+    if not file.filename.endswith(".py"):
+        raise HTTPException(status_code=400, detail="Only .py files supported")
+    
+    contents = await file.read()
+    code_str = contents.decode("utf-8")
+    
+    try:
+        tree = ast.parse(code_str)
+    except SyntaxError:
+        raise HTTPException(status_code=400, detail="Invalid Python Syntax")
+
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+        
+        # We iterate over top-level nodes specifically to preserve structure
+        for node in tree.body:
+            
+            # CASE 1: Top-Level Function
+            if isinstance(node, ast.FunctionDef):
+                builder = FlowchartBuilder(node.name)
+                builder.build_from_node(node)
+                img_data = builder.dot.pipe()
+                # Save as "function_name.png"
+                zip_file.writestr(f"{node.name}.png", img_data)
+
+            # CASE 2: Class Definition
+            elif isinstance(node, ast.ClassDef):
+                class_name = node.name
+                # Look inside the class for methods
+                for class_item in node.body:
+                    if isinstance(class_item, ast.FunctionDef):
+                        method_name = class_item.name
+                        
+                        # Build chart
+                        builder = FlowchartBuilder(f"{class_name}.{method_name}")
+                        builder.build_from_node(class_item)
+                        img_data = builder.dot.pipe()
+                        
+                        # Save as "ClassName/MethodName.png" 
+                        # The slash automatically creates a folder in the zip
+                        zip_file.writestr(f"{class_name}/{method_name}.png", img_data)
+
+    zip_buffer.seek(0)
+    return Response(
+        content=zip_buffer.getvalue(), 
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename=flowcharts_organized.zip"}
+    )
