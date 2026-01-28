@@ -2,7 +2,7 @@
 
 FlowMake is a modern full-stack application that automatically converts Python source code into professional, orthogonal flowcharts. It features a file-based dashboard for organizing projects and a live playground for real-time visualization.
 
-![Project Preview]![alt text](image.png)
+[alt text](image.png)
 
 ## 🚀 Features
 
