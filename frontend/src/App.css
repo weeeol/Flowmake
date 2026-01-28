@@ -419,3 +419,42 @@ body, #root {
   color: var(--text-gray);
   gap: 10px;
 }
+
+/* --- ZOOM CONTROLS --- */
+.zoom-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  background: var(--card-bg);
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: 1px solid var(--border);
+  z-index: 10; /* Ensure it sits on top of the image */
+}
+
+.zoom-controls button {
+  background: transparent;
+  border: none;
+  color: var(--text-dark);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.zoom-controls button:hover {
+  background: var(--hover-bg);
+  color: var(--primary);
+}
+
+/* Fix preview content for relative positioning */
+.preview-content {
+  position: relative; /* Needed for absolute positioning of controls */
+  overflow: hidden;   /* Hides the image when zoomed out of bounds */
+}
