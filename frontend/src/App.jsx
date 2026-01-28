@@ -126,7 +126,7 @@ function App() {
       {/* --- SIDEBAR --- */}
       <div className="sidebar">
         <div className="brand">
-          <h2>Flow<span className="accent">Gen</span></h2>
+          <h2>Flow<span className="accent">Make</span></h2>
         </div>
 
         {/* Navigation */}
