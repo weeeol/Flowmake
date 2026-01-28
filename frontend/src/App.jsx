@@ -5,15 +5,16 @@ import JSZip from 'jszip';
 import { 
   UploadCloud, Loader2, AlertCircle, Download, 
   Folder, FolderOpen, Image as ImageIcon, ChevronRight,
-  Layout, Code 
+  Layout, Code, Moon, Sun 
 } from 'lucide-react';
-import Playground from './Playground'; // Ensure this file exists
+import Playground from './Playground';
 import './App.css';
 
 function App() {
   // --- STATE MANAGEMENT ---
   const [viewMode, setViewMode] = useState('dashboard'); // 'dashboard' | 'playground'
-  
+  const [darkMode, setDarkMode] = useState(false); // Theme State
+
   // Dashboard States
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,19 +22,30 @@ function App() {
   const [folders, setFolders] = useState({}); 
   const [selectedFolder, setSelectedFolder] = useState(null);
 
-  // Cleanup object URLs to prevent memory leaks
+  // --- EFFECTS ---
+
+  // 1. Theme Effect: Syncs React state with CSS attributes
+  useEffect(() => {
+    if (darkMode) {
+      document.body.setAttribute('data-theme', 'dark');
+    } else {
+      document.body.removeAttribute('data-theme');
+    }
+  }, [darkMode]);
+
+  // 2. Cleanup Effect: Revoke URLs to prevent memory leaks
   useEffect(() => {
     return () => {
       Object.values(folders).flat().forEach(img => URL.revokeObjectURL(img.src));
     };
   }, [folders]);
 
-  // --- FILE UPLOAD HANDLER ---
+  // --- HANDLERS ---
+
   const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
     if (!file) return;
 
-    // Switch to dashboard view if a file is dropped
     setViewMode('dashboard');
     setLoading(true);
     setError(null);
@@ -45,7 +57,6 @@ function App() {
     formData.append('file', file);
 
     try {
-      // Use 127.0.0.1 to avoid localhost DNS lag
       const response = await axios.post('http://127.0.0.1:8000/upload_flowchart_zip', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         responseType: 'blob', 
@@ -53,7 +64,6 @@ function App() {
 
       setZipBlob(response.data);
       
-      // Parse ZIP
       const zip = await JSZip.loadAsync(response.data);
       const newFolders = {};
       const promises = [];
@@ -61,7 +71,6 @@ function App() {
       zip.forEach((relativePath, zipEntry) => {
         if (zipEntry.name.endsWith('.png')) {
           const promise = zipEntry.async('blob').then(blob => {
-            // Path logic: "UserManager/login.png" vs "login.png"
             const parts = zipEntry.name.split('/');
             let folderName = "Global Functions";
             let fileName = zipEntry.name;
@@ -85,7 +94,6 @@ function App() {
       await Promise.all(promises);
       setFolders(newFolders);
       
-      // Select first folder automatically
       const firstKey = Object.keys(newFolders)[0];
       if (firstKey) setSelectedFolder(firstKey);
 
@@ -121,7 +129,7 @@ function App() {
           <h2>Flow<span className="accent">Gen</span></h2>
         </div>
 
-        {/* 1. Navigation Switches */}
+        {/* Navigation */}
         <div className="nav-buttons">
           <button 
             className={`nav-btn ${viewMode === 'dashboard' ? 'active' : ''}`}
@@ -137,7 +145,17 @@ function App() {
           </button>
         </div>
 
-        {/* 2. Dashboard Specific Controls (Only show if in Dashboard mode) */}
+        {/* Theme Toggle */}
+        <button 
+          className="theme-btn" 
+          onClick={() => setDarkMode(!darkMode)}
+          title="Switch Theme"
+        >
+          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+          <span>{darkMode ? "Light Mode" : "Dark Mode"}</span>
+        </button>
+
+        {/* Dashboard Controls */}
         {viewMode === 'dashboard' && (
           <>
             <div {...getRootProps()} className={`mini-dropzone ${isDragActive ? 'active' : ''}`}>
@@ -178,10 +196,8 @@ function App() {
       {/* --- MAIN CANVAS --- */}
       <div className="main-canvas">
         {viewMode === 'playground' ? (
-          // MODE A: Live Playground
           <Playground />
         ) : (
-          // MODE B: Dashboard Gallery
           selectedFolder ? (
             <div className="canvas-content">
               <header className="canvas-header">
@@ -205,7 +221,7 @@ function App() {
           ) : (
             <div className="welcome-screen">
               <div className="placeholder-art">
-                <UploadCloud size={80} color="#e2e8f0" />
+                <UploadCloud size={80} color="var(--border)" />
               </div>
               <h1>Ready to Visualize?</h1>
               <p>Upload a .py file on the left, or switch to "Live Playground" mode.</p>
