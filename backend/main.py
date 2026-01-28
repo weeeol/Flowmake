@@ -6,6 +6,7 @@ import graphviz
 import zipfile
 import io
 import textwrap
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -205,6 +206,84 @@ class FlowchartBuilder(ast.NodeVisitor):
         self.add_edge(false_end, merge_id, label="No")
         self.last_node = merge_id
 
+    def visit_Try(self, node):
+        # 1. Create a "Try" Start Node
+        try_start_id = self.new_node("Try / Attempt", type='decision') 
+        self.dot.node(try_start_id, "Attempt", shape='diamond', color='#d97706', fillcolor='#fcd34d') 
+        self.add_edge(self.last_node, try_start_id)
+        
+       
+        entry_node = try_start_id
+        self.last_node = try_start_id
+
+        
+        self.visit_stmts(node.body)
+        success_end = self.last_node 
+
+       
+        exception_ends = []
+        
+        for handler in node.handlers:
+           
+            self.last_node = entry_node 
+            
+           
+            exc_name = "Exception"
+            if handler.type:
+                try:
+                    exc_name = ast.unparse(handler.type)
+                except:
+                    exc_name = "Error"
+            
+            
+            
+            if handler.body:
+                # We need to manually trigger the first node of the handler 
+                # to draw the red edge to it.
+                
+                # Peek at the first statement of the handler
+                first_stmt = handler.body[0]
+                label, _ = self.summarize(first_stmt)
+                
+                # Create the first node of the catch block manually or let visit_stmts do it?
+                # Easiest: Create an "Catch" node
+                catch_id = self.new_node(f"Catch: {exc_name}", type='process')
+                self.dot.node(catch_id, color='#dc2626', fontcolor='#991b1b', fillcolor='#fecaca') # Red styles
+                
+                # Draw RED DASHED line
+                self.dot.edge(entry_node, catch_id, label="On Error", style="dashed", color="#dc2626", fontcolor="#dc2626")
+                
+                self.last_node = catch_id
+                self.visit_stmts(handler.body)
+                exception_ends.append(self.last_node)
+
+        # 4. Handle 'Finally' (if it exists)
+        if node.finalbody:
+            # Create a "Finally" node merge point
+            finally_start = self.new_node("Finally", type='process')
+            self.dot.node(finally_start, shape='oval', style='filled', fillcolor='#e5e7eb', color='#9ca3af')
+            
+            # Connect Success path
+            self.add_edge(success_end, finally_start)
+            
+            # Connect all Exception paths
+            for exc_end in exception_ends:
+                self.add_edge(exc_end, finally_start)
+                
+            self.last_node = finally_start
+            self.visit_stmts(node.finalbody)
+        
+        else:
+            # If no finally, we need a merge point for the graph to look nice
+            merge_id = self.new_node("", type='process')
+            self.dot.node(merge_id, shape='point', width='0')
+            
+            self.add_edge(success_end, merge_id)
+            for exc_end in exception_ends:
+                self.add_edge(exc_end, merge_id)
+            
+            self.last_node = merge_id
+
 # --- NEW ZIP ENDPOINT WITH CLASS SUPPORT ---
 @app.post("/upload_flowchart_zip")
 async def upload_flowchart_zip(file: UploadFile = File(...)):
@@ -257,3 +336,42 @@ async def upload_flowchart_zip(file: UploadFile = File(...)):
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename=flowcharts_organized.zip"}
     )
+
+class CodeSnippet(BaseModel):
+    code: str
+
+# 2. Add the Preview Endpoint
+@app.post("/preview_flowchart")
+async def preview_flowchart(snippet: CodeSnippet):
+    """
+    Generates a flowchart for the FIRST function found in the text snippet.
+    Used for the live playground.
+    """
+    try:
+        tree = ast.parse(snippet.code)
+    except SyntaxError as e:
+        raise HTTPException(status_code=400, detail=f"Syntax Error: {e.msg} (Line {e.lineno})")
+
+    # Find the first function to visualize
+    target_node = None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            target_node = node
+            break
+    
+    # If no function, wrap the whole script in a fake "Main" function so it renders
+    if not target_node:
+        # Wrap top-level code in a Module/Function wrapper for the builder
+        target_node = ast.FunctionDef(name="Main", args=ast.arguments(args=[], defaults=[]), body=tree.body, decorator_list=[])
+
+    # Build Chart
+    builder = FlowchartBuilder(target_node.name if hasattr(target_node, 'name') else "Main")
+    # Use our smart "batch processor" from before
+    if isinstance(target_node, ast.FunctionDef):
+        builder.build_from_node(target_node)
+    else:
+        # Fallback for raw scripts
+        builder.visit_stmts(tree.body)
+
+    img_data = builder.dot.pipe()
+    return Response(content=img_data, media_type="image/png")
