@@ -6,6 +6,7 @@ import graphviz
 import zipfile
 import io
 import textwrap
+from pydantic import BaseModel
 
 app = FastAPI()
 
