@@ -206,6 +206,84 @@ class FlowchartBuilder(ast.NodeVisitor):
         self.add_edge(false_end, merge_id, label="No")
         self.last_node = merge_id
 
+    def visit_Try(self, node):
+        # 1. Create a "Try" Start Node
+        try_start_id = self.new_node("Try / Attempt", type='decision') 
+        self.dot.node(try_start_id, "Attempt", shape='diamond', color='#d97706', fillcolor='#fcd34d') 
+        self.add_edge(self.last_node, try_start_id)
+        
+       
+        entry_node = try_start_id
+        self.last_node = try_start_id
+
+        
+        self.visit_stmts(node.body)
+        success_end = self.last_node 
+
+       
+        exception_ends = []
+        
+        for handler in node.handlers:
+           
+            self.last_node = entry_node 
+            
+           
+            exc_name = "Exception"
+            if handler.type:
+                try:
+                    exc_name = ast.unparse(handler.type)
+                except:
+                    exc_name = "Error"
+            
+            
+            
+            if handler.body:
+                # We need to manually trigger the first node of the handler 
+                # to draw the red edge to it.
+                
+                # Peek at the first statement of the handler
+                first_stmt = handler.body[0]
+                label, _ = self.summarize(first_stmt)
+                
+                # Create the first node of the catch block manually or let visit_stmts do it?
+                # Easiest: Create an "Catch" node
+                catch_id = self.new_node(f"Catch: {exc_name}", type='process')
+                self.dot.node(catch_id, color='#dc2626', fontcolor='#991b1b', fillcolor='#fecaca') # Red styles
+                
+                # Draw RED DASHED line
+                self.dot.edge(entry_node, catch_id, label="On Error", style="dashed", color="#dc2626", fontcolor="#dc2626")
+                
+                self.last_node = catch_id
+                self.visit_stmts(handler.body)
+                exception_ends.append(self.last_node)
+
+        # 4. Handle 'Finally' (if it exists)
+        if node.finalbody:
+            # Create a "Finally" node merge point
+            finally_start = self.new_node("Finally", type='process')
+            self.dot.node(finally_start, shape='oval', style='filled', fillcolor='#e5e7eb', color='#9ca3af')
+            
+            # Connect Success path
+            self.add_edge(success_end, finally_start)
+            
+            # Connect all Exception paths
+            for exc_end in exception_ends:
+                self.add_edge(exc_end, finally_start)
+                
+            self.last_node = finally_start
+            self.visit_stmts(node.finalbody)
+        
+        else:
+            # If no finally, we need a merge point for the graph to look nice
+            merge_id = self.new_node("", type='process')
+            self.dot.node(merge_id, shape='point', width='0')
+            
+            self.add_edge(success_end, merge_id)
+            for exc_end in exception_ends:
+                self.add_edge(exc_end, merge_id)
+            
+            self.last_node = merge_id
+
 # --- NEW ZIP ENDPOINT WITH CLASS SUPPORT ---
 @app.post("/upload_flowchart_zip")
 async def upload_flowchart_zip(file: UploadFile = File(...)):
