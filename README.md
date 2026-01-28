@@ -7,7 +7,8 @@ FlowMake is a modern full-stack application that automatically converts Python s
 ## 🚀 Features
 
 ### 🌟 Core Experience
-* **Live Playground:** Type Python code on the left and see the flowchart generate instantly on the right (Split-screen real-time editor).
+* **Live Playground:** Type Python code on the left and see the flowchart generate instantly on the right.
+* **Interactive Canvas:** **Zoom, Pan, and Drag** complex flowcharts just like a map to inspect logic details.
 * **Smart Dashboard:** Drag & drop `.py` files to auto-generate flowcharts for every function and class.
 * **Folder Organization:** Automatically groups methods into folders based on their Class structure.
 * **Dark Mode:** Built-in dark theme toggle for late-night coding sessions 🌙.
@@ -24,7 +25,8 @@ FlowMake is a modern full-stack application that automatically converts Python s
 
 ## 🛠️ Tech Stack
 
-* **Frontend:** React (Vite), Monaco Editor (VS Code engine), Lucide Icons
+* **Frontend:** React (Vite), Monaco Editor, Lucide Icons
+* **Visualization:** `react-zoom-pan-pinch` (Canvas interactions)
 * **Backend:** Python, FastAPI, Graphviz
 * **Analysis:** Python `ast` (Abstract Syntax Tree)
 
