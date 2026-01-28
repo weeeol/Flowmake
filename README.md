@@ -1,6 +1,6 @@
-# FlowChartGen - Python to Flowchart Visualizer
+# FlowMake - Python to Flowchart Visualizer
 
-FlowChartGen is a modern full-stack application that automatically converts Python source code into professional, orthogonal flowcharts. It features a file-based dashboard for organizing projects and a live playground for real-time visualization.
+FlowMake is a modern full-stack application that automatically converts Python source code into professional, orthogonal flowcharts. It features a file-based dashboard for organizing projects and a live playground for real-time visualization.
 
 ![Project Preview](https://via.placeholder.com/800x450?text=Dashboard+and+Playground+Preview)
 *(Replace this link with your actual screenshot!)*
