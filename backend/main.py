@@ -258,3 +258,42 @@ async def upload_flowchart_zip(file: UploadFile = File(...)):
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename=flowcharts_organized.zip"}
     )
+
+class CodeSnippet(BaseModel):
+    code: str
+
+# 2. Add the Preview Endpoint
+@app.post("/preview_flowchart")
+async def preview_flowchart(snippet: CodeSnippet):
+    """
+    Generates a flowchart for the FIRST function found in the text snippet.
+    Used for the live playground.
+    """
+    try:
+        tree = ast.parse(snippet.code)
+    except SyntaxError as e:
+        raise HTTPException(status_code=400, detail=f"Syntax Error: {e.msg} (Line {e.lineno})")
+
+    # Find the first function to visualize
+    target_node = None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            target_node = node
+            break
+    
+    # If no function, wrap the whole script in a fake "Main" function so it renders
+    if not target_node:
+        # Wrap top-level code in a Module/Function wrapper for the builder
+        target_node = ast.FunctionDef(name="Main", args=ast.arguments(args=[], defaults=[]), body=tree.body, decorator_list=[])
+
+    # Build Chart
+    builder = FlowchartBuilder(target_node.name if hasattr(target_node, 'name') else "Main")
+    # Use our smart "batch processor" from before
+    if isinstance(target_node, ast.FunctionDef):
+        builder.build_from_node(target_node)
+    else:
+        # Fallback for raw scripts
+        builder.visit_stmts(tree.body)
+
+    img_data = builder.dot.pipe()
+    return Response(content=img_data, media_type="image/png")
