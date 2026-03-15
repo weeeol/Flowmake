@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
-const Playground = () => {
+const Playground = ({ darkMode }) => {
   // Default code example
   const [code, setCode] = useState(`def process_transaction(amount):
     print("Starting Transaction")
@@ -78,7 +78,7 @@ const Playground = () => {
         <Editor
           height="calc(100% - 40px)"
           defaultLanguage="python"
-          theme="light" // Will need adjustment if you want it to match Dark Mode exactly
+          theme={darkMode ? 'vs-dark' : 'light'}
           value={code}
           onChange={(value) => setCode(value || "")}
           options={{
