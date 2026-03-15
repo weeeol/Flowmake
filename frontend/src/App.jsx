@@ -196,7 +196,7 @@ function App() {
       {/* --- MAIN CANVAS --- */}
       <div className="main-canvas">
         {viewMode === 'playground' ? (
-          <Playground />
+          <Playground darkMode={darkMode} />
         ) : (
           selectedFolder ? (
             <div className="canvas-content">

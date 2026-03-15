@@ -458,3 +458,105 @@ body, #root {
   position: relative; /* Needed for absolute positioning of controls */
   overflow: hidden;   /* Hides the image when zoomed out of bounds */
 }
+
+/* --- RESPONSIVE LAYOUT --- */
+@media (max-width: 1100px) {
+  .dashboard {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 16px;
+  }
+
+  .main-canvas {
+    padding: 20px;
+  }
+
+  .masonry-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .playground-container {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 220px);
+  }
+
+  .editor-pane,
+  .preview-pane {
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 700px) {
+  body,
+  #root {
+    overflow: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    padding: 14px;
+  }
+
+  .nav-buttons {
+    flex-direction: row;
+    gap: 8px;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 14px;
+  }
+
+  .nav-btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.85rem;
+    padding: 10px 8px;
+  }
+
+  .theme-btn {
+    justify-content: center;
+  }
+
+  .main-canvas {
+    padding: 14px;
+  }
+
+  .canvas-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .canvas-header h1 {
+    font-size: 1.45rem;
+  }
+
+  .masonry-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-image {
+    padding: 12px;
+  }
+
+  .editor-pane,
+  .preview-pane {
+    min-height: 360px;
+  }
+
+  .zoom-controls {
+    bottom: 10px;
+    right: 10px;
+    padding: 6px;
+  }
+}
