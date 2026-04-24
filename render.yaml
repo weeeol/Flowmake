@@ -3,7 +3,6 @@ services:
     name: flowmake-backend
     env: docker
     plan: starter
-    rootDir: backend
     dockerfilePath: Dockerfile
     autoDeploy: true
     envVars:
