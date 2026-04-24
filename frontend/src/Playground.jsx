@@ -69,75 +69,84 @@ const Playground = ({ darkMode }) => {
   };
 
   return (
-    <div className="playground-container">
-      {/* LEFT: CODE EDITOR */}
-      <div className="editor-pane">
-        <div className="pane-header">
-          <span>Python Input</span>
+    <div className="playground-shell">
+      <section className="playground-hero">
+        <div className="hero-copy">
+          <p className="eyebrow">Live Playground</p>
+          <h1>Write Python, pause, and watch the logic become a diagram.</h1>
+          <p>
+            The preview updates automatically, with zoom and pan controls for inspection once the flowchart renders.
+          </p>
         </div>
-        <Editor
-          height="calc(100% - 40px)"
-          defaultLanguage="python"
-          theme={darkMode ? 'vs-dark' : 'light'}
-          value={code}
-          onChange={(value) => setCode(value || "")}
-          options={{
-            minimap: { enabled: false },
-            fontSize: 14,
-            scrollBeyondLastLine: false,
-            wordWrap: "on",
-            automaticLayout: true
-          }}
-        />
-      </div>
+      </section>
 
-      {/* RIGHT: INTERACTIVE PREVIEW */}
-      <div className="preview-pane">
-        <div className="pane-header">
-          <span>Live Flowchart</span>
-          {loading && <Loader2 className="spin" size={16} />}
+      <div className="playground-container">
+        {/* LEFT: CODE EDITOR */}
+        <div className="editor-pane">
+          <div className="pane-header">
+            <span>Python Input</span>
+          </div>
+          <Editor
+            height="calc(100% - 40px)"
+            defaultLanguage="python"
+            theme={darkMode ? 'vs-dark' : 'light'}
+            value={code}
+            onChange={(value) => setCode(value || "")}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 14,
+              scrollBeyondLastLine: false,
+              wordWrap: "on",
+              automaticLayout: true
+            }}
+          />
         </div>
-        
-        <div className="preview-content">
-          {error ? (
-            <div className="preview-error">
-              <AlertCircle size={32} />
-              <p>{error}</p>
-            </div>
-          ) : imageSrc ? (
-            // --- ZOOM & PAN WRAPPER ---
-            <TransformWrapper
-              initialScale={1}
-              minScale={0.5}
-              maxScale={4}
-              centerOnInit={true}
-              wheel={{ step: 0.1 }}
-            >
-              {({ zoomIn, zoomOut, resetTransform }) => (
-                <>
-                  {/* Floating Controls */}
-                  <div className="zoom-controls">
-                    <button onClick={() => zoomIn()} title="Zoom In"><ZoomIn size={16}/></button>
-                    <button onClick={() => zoomOut()} title="Zoom Out"><ZoomOut size={16}/></button>
-                    <button onClick={() => resetTransform()} title="Reset"><RotateCcw size={16}/></button>
-                  </div>
 
-                  {/* The Zoomable Canvas */}
-                  <TransformComponent 
-                    wrapperStyle={{ width: "100%", height: "100%" }}
-                    contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  >
-                    <img src={imageSrc} alt="Live Flowchart" className="live-image" />
-                  </TransformComponent>
-                </>
-              )}
-            </TransformWrapper>
-          ) : (
-            <div className="preview-placeholder">
-              <ImageIcon size={48} color="var(--text-gray)" opacity={0.5} />
-              <p>Type code to visualize logic</p>
-            </div>
-          )}
+        {/* RIGHT: INTERACTIVE PREVIEW */}
+        <div className="preview-pane">
+          <div className="pane-header">
+            <span>Live Flowchart</span>
+            {loading && <Loader2 className="spin" size={16} />}
+          </div>
+          
+          <div className="preview-content">
+            {error ? (
+              <div className="preview-error">
+                <AlertCircle size={32} />
+                <p>{error}</p>
+              </div>
+            ) : imageSrc ? (
+              <TransformWrapper
+                initialScale={1}
+                minScale={0.5}
+                maxScale={4}
+                centerOnInit={true}
+                wheel={{ step: 0.1 }}
+              >
+                {({ zoomIn, zoomOut, resetTransform }) => (
+                  <>
+                    <div className="zoom-controls">
+                      <button onClick={() => zoomIn()} title="Zoom In"><ZoomIn size={16}/></button>
+                      <button onClick={() => zoomOut()} title="Zoom Out"><ZoomOut size={16}/></button>
+                      <button onClick={() => resetTransform()} title="Reset"><RotateCcw size={16}/></button>
+                    </div>
+
+                    <TransformComponent 
+                      wrapperStyle={{ width: "100%", height: "100%" }}
+                      contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      <img src={imageSrc} alt="Live Flowchart" className="live-image" />
+                    </TransformComponent>
+                  </>
+                )}
+              </TransformWrapper>
+            ) : (
+              <div className="preview-placeholder">
+                <ImageIcon size={48} color="var(--text-gray)" opacity={0.5} />
+                <p>Type code to visualize logic</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

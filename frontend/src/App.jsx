@@ -120,6 +120,9 @@ function App() {
     onDrop, accept: {'text/x-python': ['.py']}, multiple: false 
   });
 
+  const totalFolders = Object.keys(folders).length;
+  const totalCharts = Object.values(folders).reduce((count, items) => count + items.length, 0);
+
   return (
     <div className="dashboard">
       
@@ -198,35 +201,67 @@ function App() {
         {viewMode === 'playground' ? (
           <Playground darkMode={darkMode} />
         ) : (
-          selectedFolder ? (
-            <div className="canvas-content">
-              <header className="canvas-header">
-                <h1>{selectedFolder}</h1>
-                <span className="badge">{folders[selectedFolder].length} Flowcharts</span>
-              </header>
-              
-              <div className="masonry-grid">
-                {folders[selectedFolder].map((img, idx) => (
-                  <div key={idx} className="chart-card">
-                    <div className="card-top">
-                      <ImageIcon size={14} /> {img.name}
-                    </div>
-                    <div className="card-image">
-                      <img src={img.src} alt={img.name} />
-                    </div>
+          <div className="canvas-shell">
+            <section className="dashboard-hero">
+              <div className="hero-copy">
+                <p className="eyebrow">Flowchart Studio</p>
+                <h1>Turn Python into a map you can scan in seconds.</h1>
+                <p>
+                  Drop a .py file, review class and function flowcharts, or move into the playground for instant iteration.
+                </p>
+              </div>
+
+              <div className="hero-stats">
+                <div className="stat-card">
+                  <span>Folders</span>
+                  <strong>{totalFolders}</strong>
+                </div>
+                <div className="stat-card">
+                  <span>Diagrams</span>
+                  <strong>{totalCharts}</strong>
+                </div>
+                <div className="stat-card stat-card-accent">
+                  <span>Mode</span>
+                  <strong>{darkMode ? 'Night' : 'Day'}</strong>
+                </div>
+              </div>
+            </section>
+
+            {selectedFolder ? (
+              <div className="canvas-content">
+                <header className="canvas-header">
+                  <div>
+                    <p className="section-label">Selected folder</p>
+                    <h2>{selectedFolder}</h2>
                   </div>
-                ))}
+                  <span className="badge">{folders[selectedFolder].length} flowcharts</span>
+                </header>
+
+                <div className="masonry-grid">
+                  {folders[selectedFolder].map((img, idx) => (
+                    <div key={idx} className="chart-card">
+                      <div className="card-top">
+                        <ImageIcon size={14} /> {img.name}
+                      </div>
+                      <div className="card-image">
+                        <img src={img.src} alt={img.name} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="welcome-screen">
-              <div className="placeholder-art">
-                <UploadCloud size={80} color="var(--border)" />
+            ) : (
+              <div className="welcome-screen">
+                <div className="welcome-card">
+                  <div className="placeholder-art">
+                    <UploadCloud size={72} color="var(--border)" />
+                  </div>
+                  <h2>Ready to visualize?</h2>
+                  <p>Upload a .py file on the left, or switch to Live Playground mode to try code instantly.</p>
+                </div>
               </div>
-              <h1>Ready to Visualize?</h1>
-              <p>Upload a .py file on the left, or switch to "Live Playground" mode.</p>
-            </div>
-          )
+            )}
+          </div>
         )}
       </div>
     </div>
