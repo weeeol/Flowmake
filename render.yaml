@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: flowmake-backend
+    env: docker
+    plan: starter
+    rootDir: backend
+    dockerfilePath: Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: CORS_ORIGINS
+        value: https://your-vercel-app.vercel.app

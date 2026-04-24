@@ -8,6 +8,7 @@ import {
   Layout, Code, Moon, Sun 
 } from 'lucide-react';
 import Playground from './Playground';
+import { apiUrl } from './api';
 import './App.css';
 
 function App() {
@@ -57,7 +58,7 @@ function App() {
     formData.append('file', file);
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/upload_flowchart_zip', formData, {
+      const response = await axios.post(apiUrl('/upload_flowchart_zip'), formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         responseType: 'blob', 
       });

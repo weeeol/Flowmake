@@ -6,6 +6,7 @@ import {
   ZoomIn, ZoomOut, RotateCcw 
 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { apiUrl } from './api';
 
 const Playground = ({ darkMode }) => {
   // Default code example
@@ -39,8 +40,7 @@ const Playground = ({ darkMode }) => {
     setError(null);
 
     try {
-      // Using 127.0.0.1 to avoid DNS lag
-      const response = await axios.post('http://127.0.0.1:8000/preview_flowchart', 
+      const response = await axios.post(apiUrl('/preview_flowchart'), 
         { code: code }, 
         { responseType: 'blob' }
       );

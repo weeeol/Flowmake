@@ -57,3 +57,53 @@ pip install -r requirements.txt
 
 # Run the Server
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+---
+
+## 🌐 Deployment
+
+### Frontend on Vercel
+The frontend is configured to use a deploy-time API base URL. Set this environment variable in Vercel:
+
+```bash
+VITE_API_BASE_URL=https://your-render-backend.onrender.com
+```
+
+Deploy the `frontend` folder as the Vercel project root. The included `vercel.json` handles client-side routing.
+
+### Backend on Render
+The backend is set up to run as a Docker web service on Render.
+
+Required setup:
+
+- Use the `backend` folder as the Render root directory.
+- Build from the included [Dockerfile](backend/Dockerfile).
+- Set `CORS_ORIGINS` to your Vercel app URL:
+
+```bash
+CORS_ORIGINS=https://your-vercel-app.vercel.app
+```
+
+Why Docker is needed:
+
+- The app generates PNG flowcharts with Graphviz.
+- Render needs the Graphviz system package installed for that rendering step.
+- The provided Dockerfile installs Graphviz before starting FastAPI.
+
+### Recommended flow
+
+1. Deploy the backend to Render first.
+2. Copy the Render service URL into `VITE_API_BASE_URL` on Vercel.
+3. Deploy the frontend to Vercel.
+4. Update `CORS_ORIGINS` on Render if your Vercel domain changes.
+
+### Local environment variables
+
+For local frontend development, you can create `frontend/.env` with:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+For local backend development, no extra env vars are required unless you want to restrict CORS.
