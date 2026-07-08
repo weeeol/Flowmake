@@ -5,8 +5,9 @@ import JSZip from 'jszip';
 import { 
   UploadCloud, Loader2, AlertCircle, Download, 
   Folder, FolderOpen, Image as ImageIcon, ChevronRight,
-  Layout, Code, Moon, Sun 
+  Layout, Code, Moon, Sun, X, ZoomIn, ZoomOut, RotateCcw 
 } from 'lucide-react';
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import Playground from './components/Playground';
 import { apiUrl } from './services/api';
 import './App.css';
@@ -20,6 +21,7 @@ function App() {
   const [zipBlob, setZipBlob] = useState(null);
   const [folders, setFolders] = useState({}); 
   const [selectedFolder, setSelectedFolder] = useState(null);
+  const [expandedImage, setExpandedImage] = useState(null);
 
   useEffect(() => {
     if (darkMode) {
@@ -224,7 +226,7 @@ function App() {
 
                 <div className="masonry-grid">
                   {folders[selectedFolder].map((img, idx) => (
-                    <div key={idx} className="chart-card">
+                    <div key={idx} className="chart-card" onClick={() => setExpandedImage(img)}>
                       <div className="card-top">
                         <ImageIcon size={14} color="var(--text-muted)" /> {img.name}
                       </div>
@@ -248,6 +250,45 @@ function App() {
           </div>
         )}
       </div>
+
+      {/* EXPANDED IMAGE MODAL */}
+      {expandedImage && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setExpandedImage(null)}>
+          <div className="modal-content">
+            <button className="modal-close" onClick={() => setExpandedImage(null)}>
+              <X size={16} />
+            </button>
+            <TransformWrapper initialScale={1} minScale={0.5} maxScale={4} centerOnInit={true} wheel={{ step: 0.1 }}>
+              {({ zoomIn, zoomOut, resetTransform }) => (
+                <>
+                  <div className="canvas-controls" style={{ bottom: '24px', right: '24px' }}>
+                    <button className="control-btn" onClick={() => zoomIn()} title="Zoom In"><ZoomIn size={16}/></button>
+                    <button className="control-btn" onClick={() => zoomOut()} title="Zoom Out"><ZoomOut size={16}/></button>
+                    <button className="control-btn" onClick={() => resetTransform()} title="Reset"><RotateCcw size={16}/></button>
+                    <div style={{width: '1px', height: '16px', backgroundColor: 'var(--border-color)', margin: '0 4px'}}></div>
+                    <button className="control-btn" onClick={() => window.open(expandedImage.src, '_blank')} title="Open PNG">PNG</button>
+                  </div>
+                  <TransformComponent 
+                    wrapperStyle={{ width: "100%", height: "100%" }}
+                    contentStyle={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center", padding: '40px' }}
+                  >
+                    <img 
+                      src={expandedImage.src} 
+                      alt={expandedImage.name} 
+                      style={{ 
+                        maxWidth: "100%", 
+                        maxHeight: "100%", 
+                        objectFit: "contain", 
+                        filter: darkMode ? "invert(0.9) hue-rotate(180deg)" : "none" 
+                      }} 
+                    />
+                  </TransformComponent>
+                </>
+              )}
+            </TransformWrapper>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
