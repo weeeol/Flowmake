@@ -62,30 +62,30 @@ class FlowchartBuilder(ast.NodeVisitor):
         if type == "start_end":
             attrs = {
                 "shape": "oval",
-                "fillcolor": "#d1fae5",
-                "color": "#059669",
-                "fontcolor": "#064e3b",
+                "fillcolor": "#ffffff",
+                "color": "#18181b",
+                "fontcolor": "#18181b",
             }
         elif type == "decision":
             attrs = {
                 "shape": "diamond",
-                "fillcolor": "#fff7ed",
-                "color": "#ea580c",
-                "fontcolor": "#9a3412",
+                "fillcolor": "#fafafa",
+                "color": "#18181b",
+                "fontcolor": "#18181b",
             }
         elif type == "process":
             attrs = {
                 "shape": "box",
-                "fillcolor": "#eff6ff",
-                "color": "#2563eb",
-                "fontcolor": "#1e3a8a",
+                "fillcolor": "#ffffff",
+                "color": "#71717a",
+                "fontcolor": "#18181b",
             }
         elif type == "io":
             attrs = {
                 "shape": "parallelogram",
-                "fillcolor": "#f3e8ff",
-                "color": "#7e22ce",
-                "fontcolor": "#581c87",
+                "fillcolor": "#f4f4f5",
+                "color": "#18181b",
+                "fontcolor": "#18181b",
             }
 
         self.dot.node(node_id, clean_label, **attrs)
@@ -195,8 +195,8 @@ class FlowchartBuilder(ast.NodeVisitor):
             try_start_id,
             "Attempt",
             shape="diamond",
-            color="#d97706",
-            fillcolor="#fcd34d",
+            color="#18181b",
+            fillcolor="#f4f4f5",
         )
         self.add_edge(self.last_node, try_start_id)
 
@@ -222,9 +222,9 @@ class FlowchartBuilder(ast.NodeVisitor):
                 catch_id = self.new_node(f"Catch: {exc_name}", type="process")
                 self.dot.node(
                     catch_id,
-                    color="#dc2626",
-                    fontcolor="#991b1b",
-                    fillcolor="#fecaca",
+                    color="#18181b",
+                    fontcolor="#18181b",
+                    fillcolor="#fafafa",
                 )
 
                 self.dot.edge(
@@ -232,8 +232,8 @@ class FlowchartBuilder(ast.NodeVisitor):
                     catch_id,
                     label="On Error",
                     style="dashed",
-                    color="#dc2626",
-                    fontcolor="#dc2626",
+                    color="#71717a",
+                    fontcolor="#71717a",
                 )
 
                 self.last_node = catch_id
@@ -246,8 +246,8 @@ class FlowchartBuilder(ast.NodeVisitor):
                 finally_start,
                 shape="oval",
                 style="filled",
-                fillcolor="#e5e7eb",
-                color="#9ca3af",
+                fillcolor="#e4e4e7",
+                color="#18181b",
             )
 
             self.add_edge(success_end, finally_start)

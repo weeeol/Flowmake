@@ -12,20 +12,15 @@ import { apiUrl } from './api';
 import './App.css';
 
 function App() {
-  // --- STATE MANAGEMENT ---
-  const [viewMode, setViewMode] = useState('dashboard'); // 'dashboard' | 'playground'
-  const [darkMode, setDarkMode] = useState(false); // Theme State
+  const [viewMode, setViewMode] = useState('dashboard');
+  const [darkMode, setDarkMode] = useState(true);
 
-  // Dashboard States
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [zipBlob, setZipBlob] = useState(null);
   const [folders, setFolders] = useState({}); 
   const [selectedFolder, setSelectedFolder] = useState(null);
 
-  // --- EFFECTS ---
-
-  // 1. Theme Effect: Syncs React state with CSS attributes
   useEffect(() => {
     if (darkMode) {
       document.body.setAttribute('data-theme', 'dark');
@@ -34,14 +29,11 @@ function App() {
     }
   }, [darkMode]);
 
-  // 2. Cleanup Effect: Revoke URLs to prevent memory leaks
   useEffect(() => {
     return () => {
       Object.values(folders).flat().forEach(img => URL.revokeObjectURL(img.src));
     };
   }, [folders]);
-
-  // --- HANDLERS ---
 
   const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -100,7 +92,7 @@ function App() {
 
     } catch (err) {
       console.error(err);
-      setError("Failed to process file. Is the Backend running?");
+      setError("Failed to process file. Check backend connection.");
     } finally {
       setLoading(false);
     }
@@ -127,52 +119,40 @@ function App() {
   return (
     <div className="dashboard">
       
-      {/* --- SIDEBAR --- */}
+      {/* SIDEBAR */}
       <div className="sidebar">
         <div className="brand">
           <h2>Flow<span className="accent">Make</span></h2>
         </div>
 
-        {/* Navigation */}
         <div className="nav-buttons">
           <button 
             className={`nav-btn ${viewMode === 'dashboard' ? 'active' : ''}`}
             onClick={() => setViewMode('dashboard')}
           >
-            <Layout size={18} /> Dashboard
+            <Layout size={16} /> Dashboard
           </button>
           <button 
             className={`nav-btn ${viewMode === 'playground' ? 'active' : ''}`}
             onClick={() => setViewMode('playground')}
           >
-            <Code size={18} /> Live Playground
+            <Code size={16} /> Playground
           </button>
         </div>
 
-        {/* Theme Toggle */}
-        <button 
-          className="theme-btn" 
-          onClick={() => setDarkMode(!darkMode)}
-          title="Switch Theme"
-        >
-          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-          <span>{darkMode ? "Light Mode" : "Dark Mode"}</span>
-        </button>
-
-        {/* Dashboard Controls */}
         {viewMode === 'dashboard' && (
           <>
             <div {...getRootProps()} className={`mini-dropzone ${isDragActive ? 'active' : ''}`}>
               <input {...getInputProps()} />
-              {loading ? <Loader2 className="spin" /> : <UploadCloud />}
-              <span>{loading ? "Processing..." : "New Upload"}</span>
+              {loading ? <Loader2 className="spin" size={20} /> : <UploadCloud size={20} />}
+              <span>{loading ? "Processing..." : "Drop .py file"}</span>
             </div>
 
-            {error && <div className="error-msg"><AlertCircle size={14}/> {error}</div>}
+            {error && <div className="error-msg" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', gap: '8px', alignItems: 'center' }}><AlertCircle size={14}/> {error}</div>}
 
             <div className="folder-list">
               <h3>Structure</h3>
-              {Object.keys(folders).length === 0 && <p className="empty-state">No files loaded.</p>}
+              {Object.keys(folders).length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingLeft: '14px' }}>No modules loaded.</p>}
               
               {Object.keys(folders).map(folderName => (
                 <button 
@@ -180,8 +160,8 @@ function App() {
                   className={`folder-item ${selectedFolder === folderName ? 'active' : ''}`}
                   onClick={() => setSelectedFolder(folderName)}
                 >
-                  {selectedFolder === folderName ? <FolderOpen size={18} /> : <Folder size={18} />}
-                  <span>{folderName}</span>
+                  {selectedFolder === folderName ? <FolderOpen size={16} /> : <Folder size={16} />}
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{folderName}</span>
                   <span className="count">{folders[folderName].length}</span>
                   {selectedFolder === folderName && <ChevronRight className="indicator" size={14} />}
                 </button>
@@ -190,14 +170,22 @@ function App() {
 
             {zipBlob && (
               <button className="download-btn-sidebar" onClick={downloadZip}>
-                <Download size={16} /> Download ZIP
+                <Download size={14} /> Export ZIP
               </button>
             )}
           </>
         )}
+
+        <button 
+          className="theme-btn" 
+          onClick={() => setDarkMode(!darkMode)}
+        >
+          {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+          <span>{darkMode ? "Light" : "Dark"}</span>
+        </button>
       </div>
 
-      {/* --- MAIN CANVAS --- */}
+      {/* MAIN CANVAS */}
       <div className="main-canvas">
         {viewMode === 'playground' ? (
           <Playground darkMode={darkMode} />
@@ -205,25 +193,21 @@ function App() {
           <div className="canvas-shell">
             <section className="dashboard-hero">
               <div className="hero-copy">
-                <p className="eyebrow">Flowchart Studio</p>
-                <h1>Turn Python into a map you can scan in seconds.</h1>
+                <p className="eyebrow">Studio</p>
+                <h1>Visualize Python logic.</h1>
                 <p>
-                  Drop a .py file, review class and function flowcharts, or move into the playground for instant iteration.
+                  Analyze entire files and instantly generate flowcharts for every function and class method.
                 </p>
               </div>
 
               <div className="hero-stats">
                 <div className="stat-card">
-                  <span>Folders</span>
+                  <span>Modules</span>
                   <strong>{totalFolders}</strong>
                 </div>
                 <div className="stat-card">
                   <span>Diagrams</span>
                   <strong>{totalCharts}</strong>
-                </div>
-                <div className="stat-card stat-card-accent">
-                  <span>Mode</span>
-                  <strong>{darkMode ? 'Night' : 'Day'}</strong>
                 </div>
               </div>
             </section>
@@ -232,17 +216,17 @@ function App() {
               <div className="canvas-content">
                 <header className="canvas-header">
                   <div>
-                    <p className="section-label">Selected folder</p>
+                    <p className="section-label">Module</p>
                     <h2>{selectedFolder}</h2>
                   </div>
-                  <span className="badge">{folders[selectedFolder].length} flowcharts</span>
+                  <span className="badge">{folders[selectedFolder].length} Flowcharts</span>
                 </header>
 
                 <div className="masonry-grid">
                   {folders[selectedFolder].map((img, idx) => (
                     <div key={idx} className="chart-card">
                       <div className="card-top">
-                        <ImageIcon size={14} /> {img.name}
+                        <ImageIcon size={14} color="var(--text-muted)" /> {img.name}
                       </div>
                       <div className="card-image">
                         <img src={img.src} alt={img.name} />
@@ -255,10 +239,9 @@ function App() {
               <div className="welcome-screen">
                 <div className="welcome-card">
                   <div className="placeholder-art">
-                    <UploadCloud size={72} color="var(--border)" />
+                    <UploadCloud size={48} strokeWidth={1} />
                   </div>
-                  <h2>Ready to visualize?</h2>
-                  <p>Upload a .py file on the left, or switch to Live Playground mode to try code instantly.</p>
+                  <p>Drop a Python file to begin.</p>
                 </div>
               </div>
             )}

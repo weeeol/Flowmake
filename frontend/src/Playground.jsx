@@ -1,36 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import axios from 'axios';
-import { 
-  AlertCircle, Loader2, Image as ImageIcon, 
-  ZoomIn, ZoomOut, RotateCcw 
-} from 'lucide-react';
+import { AlertCircle, Loader2, Image as ImageIcon, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { apiUrl } from './api';
 
 const Playground = ({ darkMode }) => {
-  // Default code example
-  const [code, setCode] = useState(`def process_transaction(amount):
-    print("Starting Transaction")
-    if amount > 1000:
-        print("Large Transaction")
-        verify_funds()
-    else:
-        print("Standard Transaction")
-    
-    save_to_db()
-    return True`);
-
+  const [code, setCode] = useState(`def process_transaction(amount):\n    print("Starting Transaction")\n    if amount > 1000:\n        print("Large Transaction")\n        verify_funds()\n    else:\n        print("Standard Transaction")\n    \n    save_to_db()\n    return True`);
   const [imageSrc, setImageSrc] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Debounce: Only fetch after user stops typing for 1 second
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchFlowchart();
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [code]);
 
@@ -44,10 +28,7 @@ const Playground = ({ darkMode }) => {
         { code: code }, 
         { responseType: 'blob' }
       );
-      
-      // Cleanup old URL to avoid memory leaks
       if (imageSrc) URL.revokeObjectURL(imageSrc);
-
       const url = URL.createObjectURL(response.data);
       setImageSrc(url);
     } catch (err) {
@@ -69,25 +50,16 @@ const Playground = ({ darkMode }) => {
   };
 
   return (
-    <div className="playground-shell">
-      <section className="playground-hero">
-        <div className="hero-copy">
-          <p className="eyebrow">Live Playground</p>
-          <h1>Write Python, pause, and watch the logic become a diagram.</h1>
-          <p>
-            The preview updates automatically, with zoom and pan controls for inspection once the flowchart renders.
-          </p>
+    <div className="playground-container">
+      {/* LEFT: CODE EDITOR */}
+      <div className="pg-sidebar">
+        <div className="pg-header">
+          <h3>Python Input</h3>
+          {loading && <Loader2 className="spin" size={14} color="var(--text-muted)" />}
         </div>
-      </section>
-
-      <div className="playground-container">
-        {/* LEFT: CODE EDITOR */}
-        <div className="editor-pane">
-          <div className="pane-header">
-            <span>Python Input</span>
-          </div>
+        <div className="editor-wrapper">
           <Editor
-            height="calc(100% - 40px)"
+            height="100%"
             defaultLanguage="python"
             theme={darkMode ? 'vs-dark' : 'light'}
             value={code}
@@ -95,59 +67,47 @@ const Playground = ({ darkMode }) => {
             options={{
               minimap: { enabled: false },
               fontSize: 14,
+              fontFamily: 'JetBrains Mono',
               scrollBeyondLastLine: false,
               wordWrap: "on",
+              padding: { top: 16 },
               automaticLayout: true
             }}
           />
         </div>
+      </div>
 
-        {/* RIGHT: INTERACTIVE PREVIEW */}
-        <div className="preview-pane">
-          <div className="pane-header">
-            <span>Live Flowchart</span>
-            {loading && <Loader2 className="spin" size={16} />}
+      {/* RIGHT: INTERACTIVE PREVIEW */}
+      <div className="pg-canvas">
+        {error ? (
+          <div className="empty-canvas">
+            <AlertCircle size={32} color="var(--text-secondary)" />
+            <p>{error}</p>
           </div>
-          
-          <div className="preview-content">
-            {error ? (
-              <div className="preview-error">
-                <AlertCircle size={32} />
-                <p>{error}</p>
-              </div>
-            ) : imageSrc ? (
-              <TransformWrapper
-                initialScale={1}
-                minScale={0.5}
-                maxScale={4}
-                centerOnInit={true}
-                wheel={{ step: 0.1 }}
-              >
-                {({ zoomIn, zoomOut, resetTransform }) => (
-                  <>
-                    <div className="zoom-controls">
-                      <button onClick={() => zoomIn()} title="Zoom In"><ZoomIn size={16}/></button>
-                      <button onClick={() => zoomOut()} title="Zoom Out"><ZoomOut size={16}/></button>
-                      <button onClick={() => resetTransform()} title="Reset"><RotateCcw size={16}/></button>
-                    </div>
-
-                    <TransformComponent 
-                      wrapperStyle={{ width: "100%", height: "100%" }}
-                      contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
-                    >
-                      <img src={imageSrc} alt="Live Flowchart" className="live-image" />
-                    </TransformComponent>
-                  </>
-                )}
-              </TransformWrapper>
-            ) : (
-              <div className="preview-placeholder">
-                <ImageIcon size={48} color="var(--text-gray)" opacity={0.5} />
-                <p>Type code to visualize logic</p>
-              </div>
+        ) : imageSrc ? (
+          <TransformWrapper initialScale={1} minScale={0.5} maxScale={4} centerOnInit={true} wheel={{ step: 0.1 }}>
+            {({ zoomIn, zoomOut, resetTransform }) => (
+              <>
+                <div className="canvas-controls">
+                  <button className="control-btn" onClick={() => zoomIn()} title="Zoom In"><ZoomIn size={16}/></button>
+                  <button className="control-btn" onClick={() => zoomOut()} title="Zoom Out"><ZoomOut size={16}/></button>
+                  <button className="control-btn" onClick={() => resetTransform()} title="Reset"><RotateCcw size={16}/></button>
+                </div>
+                <TransformComponent 
+                  wrapperStyle={{ width: "100%", height: "100%" }}
+                  contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <img src={imageSrc} alt="Live Flowchart" style={{ maxWidth: '100%', height: 'auto', padding: '40px' }} />
+                </TransformComponent>
+              </>
             )}
+          </TransformWrapper>
+        ) : (
+          <div className="empty-canvas">
+            <ImageIcon size={32} color="var(--border-color)" />
+            <p>Type code to visualize logic</p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
