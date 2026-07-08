@@ -1,5 +1,4 @@
 fastapi
-uvicorn[standard]
+uvicorn
 graphviz
-zipfile36
 python-multipart

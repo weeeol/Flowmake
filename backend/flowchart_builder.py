@@ -92,6 +92,12 @@ class FlowchartBuilder(ast.NodeVisitor):
         self.node_count += 1
         return node_id
 
+    def new_point_node(self):
+        node_id = str(self.node_count)
+        self.dot.node(node_id, shape="point", width="0")
+        self.node_count += 1
+        return node_id
+
     def add_edge(self, start, end, label=""):
         if start and end:
             self.dot.edge(start, end, label=label)
@@ -178,8 +184,7 @@ class FlowchartBuilder(ast.NodeVisitor):
         self.visit_stmts(node.orelse)
         false_end = self.last_node
 
-        merge_id = self.new_node("", type="process")
-        self.dot.node(merge_id, shape="point", width="0")
+        merge_id = self.new_point_node()
         self.add_edge(true_end, merge_id, label="Yes")
         self.add_edge(false_end, merge_id, label="No")
         self.last_node = merge_id
@@ -253,11 +258,56 @@ class FlowchartBuilder(ast.NodeVisitor):
             self.last_node = finally_start
             self.visit_stmts(node.finalbody)
         else:
-            merge_id = self.new_node("", type="process")
-            self.dot.node(merge_id, shape="point", width="0")
+            merge_id = self.new_point_node()
 
             self.add_edge(success_end, merge_id)
             for exc_end in exception_ends:
                 self.add_edge(exc_end, merge_id)
 
             self.last_node = merge_id
+
+    def visit_While(self, node):
+        try:
+            condition = ast.unparse(node.test)
+        except Exception:
+            condition = "Condition"
+
+        decision_id = self.new_node(f"While {condition}?", type="decision")
+        self.add_edge(self.last_node, decision_id)
+
+        # Loop body path
+        self.last_node = decision_id
+        self.visit_stmts(node.body)
+        body_end = self.last_node
+
+        # Loop back edge to the decision point
+        self.add_edge(body_end, decision_id, label="Loop")
+
+        # Exit path
+        exit_node_id = self.new_point_node()
+        self.add_edge(decision_id, exit_node_id, label="No")
+        self.last_node = exit_node_id
+
+    def visit_For(self, node):
+        try:
+            target = ast.unparse(node.target)
+            iter_val = ast.unparse(node.iter)
+            label = f"For each {target} in {iter_val}?"
+        except Exception:
+            label = "For each?"
+
+        decision_id = self.new_node(label, type="decision")
+        self.add_edge(self.last_node, decision_id)
+
+        # Loop body path
+        self.last_node = decision_id
+        self.visit_stmts(node.body)
+        body_end = self.last_node
+
+        # Loop back edge to the decision point
+        self.add_edge(body_end, decision_id, label="Loop")
+
+        # Exit path
+        exit_node_id = self.new_point_node()
+        self.add_edge(decision_id, exit_node_id, label="Done")
+        self.last_node = exit_node_id
