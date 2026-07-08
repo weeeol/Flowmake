@@ -2,12 +2,16 @@ import ast
 import io
 import zipfile
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+import uuid
+
+from fastapi import APIRouter, File, HTTPException, UploadFile, Depends
 from fastapi.responses import Response
+from sqlalchemy.orm import Session
 
 from app.services.builder import FlowchartBuilder
 from app.schemas.models import CodeSnippet
-
+from app.database import get_db
+from app.db_models import DbCodeSnippet
 
 router = APIRouter()
 
@@ -29,8 +33,8 @@ async def upload_flowchart_zip(file: UploadFile = File(...)):
 
     with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
         for node in tree.body:
-            if isinstance(node, ast.FunctionDef):
-                builder = FlowchartBuilder(node.name)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                builder = FlowchartBuilder(node.name, fmt="png")
                 builder.build_from_node(node)
                 img_data = builder.dot.pipe()
                 zip_file.writestr(f"{node.name}.png", img_data)
@@ -38,10 +42,10 @@ async def upload_flowchart_zip(file: UploadFile = File(...)):
             elif isinstance(node, ast.ClassDef):
                 class_name = node.name
                 for class_item in node.body:
-                    if isinstance(class_item, ast.FunctionDef):
+                    if isinstance(class_item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                         method_name = class_item.name
 
-                        builder = FlowchartBuilder(f"{class_name}.{method_name}")
+                        builder = FlowchartBuilder(f"{class_name}.{method_name}", fmt="png")
                         builder.build_from_node(class_item)
                         img_data = builder.dot.pipe()
 
@@ -68,7 +72,7 @@ async def preview_flowchart(snippet: CodeSnippet):
 
     target_node = None
     for node in tree.body:
-        if isinstance(node, ast.FunctionDef):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             target_node = node
             break
 
@@ -80,11 +84,32 @@ async def preview_flowchart(snippet: CodeSnippet):
             decorator_list=[],
         )
 
-    builder = FlowchartBuilder(target_node.name if hasattr(target_node, "name") else "Main")
-    if isinstance(target_node, ast.FunctionDef):
+    builder = FlowchartBuilder(target_node.name if hasattr(target_node, "name") else "Main", fmt=snippet.format)
+    if isinstance(target_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
         builder.build_from_node(target_node)
     else:
         builder.visit_stmts(tree.body)
 
     img_data = builder.dot.pipe()
-    return Response(content=img_data, media_type="image/png")
+    media_type = f"image/{snippet.format}"
+    if snippet.format == "svg":
+        media_type = "image/svg+xml"
+    elif snippet.format == "pdf":
+        media_type = "application/pdf"
+    
+    return Response(content=img_data, media_type=media_type)
+
+@router.post("/snippets")
+async def save_snippet(snippet: CodeSnippet, db: Session = Depends(get_db)):
+    snippet_id = str(uuid.uuid4())[:8]
+    db_snippet = DbCodeSnippet(id=snippet_id, code=snippet.code)
+    db.add(db_snippet)
+    db.commit()
+    return {"id": snippet_id}
+
+@router.get("/snippets/{snippet_id}")
+async def get_snippet(snippet_id: str, db: Session = Depends(get_db)):
+    db_snippet = db.query(DbCodeSnippet).filter(DbCodeSnippet.id == snippet_id).first()
+    if not db_snippet:
+        raise HTTPException(status_code=404, detail="Snippet not found")
+    return {"code": db_snippet.code}

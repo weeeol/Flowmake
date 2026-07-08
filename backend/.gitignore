@@ -12,3 +12,6 @@ env/
 *.zip
 *.pdf
 flowchart_output*
+
+# Database
+*.db

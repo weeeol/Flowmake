@@ -4,7 +4,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import router as flowchart_router
+from app.database import engine, Base
+import app.db_models
 
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

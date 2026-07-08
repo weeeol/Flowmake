@@ -5,8 +5,8 @@ import graphviz
 
 
 class FlowchartBuilder(ast.NodeVisitor):
-    def __init__(self, title):
-        self.dot = graphviz.Digraph(comment=title, format="png")
+    def __init__(self, title, fmt="svg"):
+        self.dot = graphviz.Digraph(comment=title, format=fmt)
         self.dot.attr(splines="ortho")
         self.dot.attr("node", shape="box", style="filled,rounded", fontname="Helvetica")
 
@@ -54,39 +54,42 @@ class FlowchartBuilder(ast.NodeVisitor):
         except Exception:
             return ("Process Logic", "process")
 
-    def new_node(self, label, type="process"):
+    def new_node(self, label, type="process", lineno=None):
         node_id = str(self.node_count)
         clean_label = label.replace(":", "").replace('"', "'")
 
         attrs = {}
+        if lineno is not None:
+            attrs["id"] = f"line-{lineno}"
+
         if type == "start_end":
-            attrs = {
+            attrs.update({
                 "shape": "oval",
                 "fillcolor": "#ffffff",
                 "color": "#18181b",
                 "fontcolor": "#18181b",
-            }
+            })
         elif type == "decision":
-            attrs = {
+            attrs.update({
                 "shape": "diamond",
                 "fillcolor": "#fafafa",
                 "color": "#18181b",
                 "fontcolor": "#18181b",
-            }
+            })
         elif type == "process":
-            attrs = {
+            attrs.update({
                 "shape": "box",
                 "fillcolor": "#ffffff",
                 "color": "#71717a",
                 "fontcolor": "#18181b",
-            }
+            })
         elif type == "io":
-            attrs = {
+            attrs.update({
                 "shape": "parallelogram",
                 "fillcolor": "#f4f4f5",
                 "color": "#18181b",
                 "fontcolor": "#18181b",
-            }
+            })
 
         self.dot.node(node_id, clean_label, **attrs)
         self.node_count += 1
@@ -133,8 +136,9 @@ class FlowchartBuilder(ast.NodeVisitor):
             full_label = "\n".join(collapsed_labels)
             is_io = any(t == "io" for t in types)
             style_type = "io" if is_io else "process"
+            lineno = getattr(buffer[0], 'lineno', None)
 
-            node_id = self.new_node(full_label, type=style_type)
+            node_id = self.new_node(full_label, type=style_type, lineno=lineno)
             self.add_edge(self.last_node, node_id)
             self.last_node = node_id
 
@@ -171,7 +175,7 @@ class FlowchartBuilder(ast.NodeVisitor):
         except Exception:
             condition = "Condition"
 
-        decision_id = self.new_node(f"Is {condition}?", type="decision")
+        decision_id = self.new_node(f"Is {condition}?", type="decision", lineno=getattr(node, 'lineno', None))
         self.add_edge(self.last_node, decision_id)
 
         entry_node = decision_id
@@ -190,7 +194,7 @@ class FlowchartBuilder(ast.NodeVisitor):
         self.last_node = merge_id
 
     def visit_Try(self, node):
-        try_start_id = self.new_node("Try / Attempt", type="decision")
+        try_start_id = self.new_node("Try / Attempt", type="decision", lineno=getattr(node, 'lineno', None))
         self.dot.node(
             try_start_id,
             "Attempt",
@@ -219,7 +223,7 @@ class FlowchartBuilder(ast.NodeVisitor):
                     exc_name = "Error"
 
             if handler.body:
-                catch_id = self.new_node(f"Catch: {exc_name}", type="process")
+                catch_id = self.new_node(f"Catch: {exc_name}", type="process", lineno=getattr(handler, 'lineno', None))
                 self.dot.node(
                     catch_id,
                     color="#18181b",
@@ -272,7 +276,7 @@ class FlowchartBuilder(ast.NodeVisitor):
         except Exception:
             condition = "Condition"
 
-        decision_id = self.new_node(f"While {condition}?", type="decision")
+        decision_id = self.new_node(f"While {condition}?", type="decision", lineno=getattr(node, 'lineno', None))
         self.add_edge(self.last_node, decision_id)
 
         # Loop body path
@@ -311,3 +315,35 @@ class FlowchartBuilder(ast.NodeVisitor):
         exit_node_id = self.new_point_node()
         self.add_edge(decision_id, exit_node_id, label="Done")
         self.last_node = exit_node_id
+
+    def visit_Match(self, node):
+        try:
+            subject = ast.unparse(node.subject)
+        except Exception:
+            subject = "Expression"
+
+        decision_id = self.new_node(f"Match {subject}?", type="decision", lineno=getattr(node, 'lineno', None))
+        self.add_edge(self.last_node, decision_id)
+
+        entry_node = decision_id
+        case_ends = []
+
+        for case in node.cases:
+            try:
+                pattern = ast.unparse(case.pattern)
+            except Exception:
+                pattern = "Pattern"
+            
+            case_start = self.new_point_node()
+            self.add_edge(entry_node, case_start, label=f"Case {pattern}")
+            
+            self.last_node = case_start
+            self.visit_stmts(case.body)
+            case_ends.append(self.last_node)
+
+        merge_id = self.new_point_node()
+        for end in case_ends:
+            self.add_edge(end, merge_id)
+
+        self.last_node = merge_id
+
