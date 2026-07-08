@@ -3,7 +3,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from flowchart_routes import router as flowchart_router
+from app.api.routes import router as flowchart_router
 
 
 app = FastAPI()

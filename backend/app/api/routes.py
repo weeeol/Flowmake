@@ -5,8 +5,8 @@ import zipfile
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import Response
 
-from flowchart_builder import FlowchartBuilder
-from schemas import CodeSnippet
+from app.services.builder import FlowchartBuilder
+from app.schemas.models import CodeSnippet
 
 
 router = APIRouter()

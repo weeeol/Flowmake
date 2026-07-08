@@ -7,8 +7,8 @@ import {
   Folder, FolderOpen, Image as ImageIcon, ChevronRight,
   Layout, Code, Moon, Sun 
 } from 'lucide-react';
-import Playground from './Playground';
-import { apiUrl } from './api';
+import Playground from './components/Playground';
+import { apiUrl } from './services/api';
 import './App.css';
 
 function App() {

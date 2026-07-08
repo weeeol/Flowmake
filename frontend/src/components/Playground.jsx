@@ -3,7 +3,7 @@ import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import { AlertCircle, Loader2, Image as ImageIcon, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-import { apiUrl } from './api';
+import { apiUrl } from '../services/api';
 
 const Playground = ({ darkMode }) => {
   const [code, setCode] = useState(`def process_transaction(amount):\n    print("Starting Transaction")\n    if amount > 1000:\n        print("Large Transaction")\n        verify_funds()\n    else:\n        print("Standard Transaction")\n    \n    save_to_db()\n    return True`);
