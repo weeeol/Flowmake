@@ -103,7 +103,10 @@ class FlowchartBuilder(ast.NodeVisitor):
 
     def add_edge(self, start, end, label=""):
         if start and end:
-            self.dot.edge(start, end, label=label)
+            if label:
+                self.dot.edge(start, end, xlabel=label)
+            else:
+                self.dot.edge(start, end)
 
     def visit_stmts(self, stmts):
         buffer = []
